@@ -196,7 +196,7 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
     local col1, col2
 
     local time_size = font_size
-    local title_size = font_size
+    local title_size = math.floor(font_size * 0.9)
     local abstract_size = math.floor(font_size * 0.8)
     local speaker_size = math.floor(font_size * 0.8)
 
@@ -210,7 +210,7 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
     end
 
     if not current_talk then
-        text(col2, y, "Nope. That's it.", time_size, r,g,b,1)
+        text(col2, y, "Das war's.", time_size, r,g,b,1)
     else
         -- Time
         text(col1, y, current_talk.start_str, time_size, r,g,b,1)
@@ -219,15 +219,15 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
         local delta = current_talk.start_unix - api.clock.unix()
         local talk_time
         if delta > 180*60 then
-            talk_time = string.format("in %d h", math.floor(delta/3600))
+            talk_time = string.format("in %d Std.", math.floor(delta/3600))
         elseif delta > 0 then
-            talk_time = string.format("in %d min", math.floor(delta/60)+1)
+            talk_time = string.format("in %d Min.", math.floor(delta/60)+1)
         else
-            talk_time = "Now"
+            talk_time = "Jetzt"
         end
 
-        local y_time = y+time_size
-        text(col1, y_time, talk_time, time_size, r,g,b,1)
+        local y_time = y+time_size+5
+        text(col1, y_time, talk_time, time_size, r,g,b,0.8)
 
         -- Title
         local lines = wrap(current_talk.title, font, title_size, a.width - col2)
@@ -279,7 +279,7 @@ local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
     local col1, col2
 
     local time_size = font_size
-    local title_size = font_size
+    local title_size = math.floor(font_size * 0.9)
     local abstract_size = math.floor(font_size * 0.8)
     local speaker_size = math.floor(font_size * 0.8)
 
@@ -293,7 +293,7 @@ local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
     end
 
     if not other_talks[1] then
-        text(col2, y, "Nope. That's it.", time_size, r,g,b,1)
+        text(col2, y, "Das war's.", time_size, r,g,b,1)
     else
         -- Time
         text(col1, y, other_talks[1].start_str, time_size, r,g,b,1)
@@ -302,15 +302,15 @@ local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
         local delta = other_talks[1].start_unix - api.clock.unix()
         local talk_time
         if delta > 180*60 then
-            talk_time = string.format("in %d h", math.floor(delta/3600))
+            talk_time = string.format("in %d Std.", math.floor(delta/3600))
         elseif delta > 0 then
-            talk_time = string.format("in %d min", math.floor(delta/60)+1)
+            talk_time = string.format("in %d Min.", math.floor(delta/60)+1)
         else
-            talk_time = "Now"
+            talk_time = "Jetzt"
         end
 
-        local y_time = y+time_size
-        text(col1, y_time, talk_time, time_size, r,g,b,1)
+        local y_time = y+time_size+5
+        text(col1, y_time, talk_time, time_size, r,g,b,0.8)
 
         -- Title
         local lines = wrap(other_talks[1].title, font, title_size, a.width - col2)
