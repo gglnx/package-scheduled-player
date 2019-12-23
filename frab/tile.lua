@@ -260,8 +260,9 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
 end
 
 local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
-    local title_size = config.font_size or 70
-    local align = config.other_align or "left"
+    local font_size = config.font_size or 70
+    local align = config.next_align or "left"
+    local abstract = config.next_abstract
     local r,g,b = helper.parse_rgb(config.color or "#ffffff")
 
     local a = anims.Area(x2 - x1, y2 - y1)
@@ -269,87 +270,71 @@ local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
     local S = starts
     local E = ends
 
-    local time_size = title_size
-    local info_size = math.floor(title_size * 0.8)
-
-    local split_x
-    if align == "left" then
-        split_x = font:width("In 60 min", title_size)*1.5
-    else
-        split_x = 0
-    end
-
-    local x, y = 0, 0
-
     local function text(...)
         return a.add(anims.moving_font(S, E, font, ...))
     end
 
-    if #other_talks == 0 and sys.now() > 30 then
-        text(split_x, y, "No other talks", title_size, r,g,b,1)
+    local x, y = 0, 0
+
+    local col1, col2
+
+    local time_size = font_size
+    local title_size = font_size
+    local abstract_size = math.floor(font_size * 0.8)
+    local speaker_size = math.floor(font_size * 0.8)
+
+    local dummy = "in XXXX min"
+    if align == "left" then
+        col1 = 0
+        col2 = 0 + font:width(dummy, time_size)
+    else
+        col1 = -font:width(dummy, time_size)
+        col2 = 0
     end
 
-    local now = api.clock.unix()
+    if not other_talks[1] then
+        text(col2, y, "Nope. That's it.", time_size, r,g,b,1)
+    else
+        -- Time
+        text(col1, y, other_talks[1].start_str, time_size, r,g,b,1)
 
-    local time_sep = false
-    for idx = 1, #other_talks do
-        local talk = other_talks[idx]
-
-        local title_lines = wrap(
-            talk.title,
-            font, title_size, a.width - split_x
-        )
-        pp(rooms)
-        local info_lines = wrap(
-            rooms[talk.place].name_short .. " with " .. table.concat(talk.speakers, ", "), 
-            font, info_size, a.width - split_x
-        )
-
-        if y + #title_lines * title_size + info_size > a.height then
-            break
-        end
-
-        if not time_sep and talk.start_unix > api.clock.unix() then
-            if idx > 0 then
-                y = y + 20
-            end
-            time_sep = true
-        end
-
-        -- time
-        local time
-        local til = talk.start_unix - now
-        if til > -60 and til < 60 then
-            time = "Now"
-            local w = font:width(time, time_size)+time_size
-            text(x+split_x-w, y, time, time_size, 0,.6,0.57,1)
-        elseif til > 0 and til < 15 * 60 then
-            time = string.format("In %d min", math.floor(til/60))
-            local w = font:width(time, time_size)+time_size
-            text(x+split_x-w, y, time, time_size, 0,.6,0.57,1)
-        elseif talk.start_unix > now then
-            time = talk.start_str
-            local w = font:width(time, time_size)+time_size
-            text(x+split_x-w, y, time, time_size, r,g,b,1)
+        -- Delta
+        local delta = other_talks[1].start_unix - api.clock.unix()
+        local talk_time
+        if delta > 180*60 then
+            talk_time = string.format("in %d h", math.floor(delta/3600))
+        elseif delta > 0 then
+            talk_time = string.format("in %d min", math.floor(delta/60)+1)
         else
-            time = string.format("%d min ago", math.ceil(-til/60))
-            local w = font:width(time, time_size)+time_size
-            text(x+split_x-w, y, time, time_size, r,g,b,.8)
+            talk_time = "Now"
         end
 
-        -- title
-        for idx = 1, #title_lines do
-            text(x+split_x, y, title_lines[idx], title_size, r,g,b,1)
+        local y_time = y+time_size
+        text(col1, y_time, talk_time, time_size, r,g,b,1)
+
+        -- Title
+        local lines = wrap(other_talks[1].title, font, title_size, a.width - col2)
+        for idx = 1, math.min(5, #lines) do
+            text(col2, y, lines[idx], title_size, r,g,b,1)
             y = y + title_size
         end
-        y = y + 3
-
-        -- info
-        for idx = 1, #info_lines do
-            text(x+split_x, y, info_lines[idx], info_size, r,g,b,.8)
-            y = y + info_size
-        end
         y = y + 20
+
+        -- Abstract
+        if abstract then
+            local lines = wrap(other_talks[1].abstract, font, abstract_size, a.width - col2)
+            for idx = 1, math.min(5, #lines) do
+                text(col2, y, lines[idx], abstract_size, r,g,b,1)
+                y = y + abstract_size
+            end
+            y = y + 20
+        end
+
+        -- Speakers
+        for idx = 1, #other_talks[1].speakers do
+            text(col2, y, other_talks[1].speakers[idx], speaker_size, r,g,b,.8)
+            y = y + speaker_size
+        end
     end
 
     for now in api.frame_between(starts, ends) do
