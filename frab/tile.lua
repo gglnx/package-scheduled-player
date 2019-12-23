@@ -176,7 +176,7 @@ local function check_next_talk()
     pp(next_talks)
 end
 
-local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
+local function view_talk(talk, starts, ends, config, x1, y1, x2, y2)
     local font_size = config.font_size or 70
     local align = config.next_align or "left"
     local abstract = config.next_abstract
@@ -191,6 +191,10 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
         return a.add(anims.moving_font(S, E, font, ...))
     end
 
+    local function info_text(...)
+        return a.add(anims.moving_font(S, E, info_font, ...))
+    end
+
     local x, y = 0, 0
 
     local col1, col2
@@ -200,23 +204,23 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
     local abstract_size = math.floor(font_size * 0.8)
     local speaker_size = math.floor(font_size * 0.8)
 
-    local dummy = "in XXXX min"
+    local dummy = "in XXX Std."
     if align == "left" then
         col1 = 0
-        col2 = 0 + font:width(dummy, time_size)
+        col2 = 0 + info_font:width(dummy, time_size)
     else
-        col1 = -font:width(dummy, time_size)
+        col1 = -info_font:width(dummy, time_size)
         col2 = 0
     end
 
-    if not current_talk then
+    if not talk then
         text(col2, y, "Das war's.", time_size, r,g,b,1)
     else
         -- Time
-        text(col1, y, current_talk.start_str, time_size, r,g,b,1)
+        text(col1, y, talk.start_str, time_size, r,g,b,1)
 
         -- Delta
-        local delta = current_talk.start_unix - api.clock.unix()
+        local delta = talk.start_unix - api.clock.unix()
         local talk_time
         if delta > 180*60 then
             talk_time = string.format("in %d Std.", math.floor(delta/3600))
@@ -226,11 +230,11 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
             talk_time = "Jetzt"
         end
 
-        local y_time = y+time_size+5
-        text(col1, y_time, talk_time, time_size, r,g,b,0.8)
+        local y_time = y+time_size+10
+        info_text(col1, y_time, talk_time, time_size, r,g,b,0.8)
 
         -- Title
-        local lines = wrap(current_talk.title, font, title_size, a.width - col2)
+        local lines = wrap(talk.title, font, title_size, a.width - col2)
         for idx = 1, math.min(5, #lines) do
             text(col2, y, lines[idx], title_size, r,g,b,1)
             y = y + title_size
@@ -239,7 +243,7 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
 
         -- Abstract
         if abstract then
-            local lines = wrap(current_talk.abstract, font, abstract_size, a.width - col2)
+            local lines = wrap(talk.abstract, font, abstract_size, a.width - col2)
             for idx = 1, math.min(5, #lines) do
                 text(col2, y, lines[idx], abstract_size, r,g,b,1)
                 y = y + abstract_size
@@ -248,8 +252,8 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
         end
 
         -- Speakers
-        for idx = 1, #current_talk.speakers do
-            text(col2, y, current_talk.speakers[idx], speaker_size, r,g,b,.8)
+        for idx = 1, #talk.speakers do
+            info_text(col2, y, talk.speakers[idx], speaker_size, r,g,b,.8)
             y = y + speaker_size
         end
     end
@@ -259,87 +263,12 @@ local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
     end
 end
 
+local function view_next_talk(starts, ends, config, x1, y1, x2, y2)
+    view_talk(current_talk, starts, ends, config, x1, y1, x2, y2)
+end
+
 local function view_other_talks(starts, ends, config, x1, y1, x2, y2)
-    local font_size = config.font_size or 70
-    local align = config.next_align or "left"
-    local abstract = config.next_abstract
-    local r,g,b = helper.parse_rgb(config.color or "#ffffff")
-
-    local a = anims.Area(x2 - x1, y2 - y1)
-
-    local S = starts
-    local E = ends
-
-    local function text(...)
-        return a.add(anims.moving_font(S, E, font, ...))
-    end
-
-    local x, y = 0, 0
-
-    local col1, col2
-
-    local time_size = font_size
-    local title_size = math.floor(font_size * 0.9)
-    local abstract_size = math.floor(font_size * 0.8)
-    local speaker_size = math.floor(font_size * 0.8)
-
-    local dummy = "in XXXX min"
-    if align == "left" then
-        col1 = 0
-        col2 = 0 + font:width(dummy, time_size)
-    else
-        col1 = -font:width(dummy, time_size)
-        col2 = 0
-    end
-
-    if not other_talks[1] then
-        text(col2, y, "Das war's.", time_size, r,g,b,1)
-    else
-        -- Time
-        text(col1, y, other_talks[1].start_str, time_size, r,g,b,1)
-
-        -- Delta
-        local delta = other_talks[1].start_unix - api.clock.unix()
-        local talk_time
-        if delta > 180*60 then
-            talk_time = string.format("in %d Std.", math.floor(delta/3600))
-        elseif delta > 0 then
-            talk_time = string.format("in %d Min.", math.floor(delta/60)+1)
-        else
-            talk_time = "Jetzt"
-        end
-
-        local y_time = y+time_size+5
-        text(col1, y_time, talk_time, time_size, r,g,b,0.8)
-
-        -- Title
-        local lines = wrap(other_talks[1].title, font, title_size, a.width - col2)
-        for idx = 1, math.min(5, #lines) do
-            text(col2, y, lines[idx], title_size, r,g,b,1)
-            y = y + title_size
-        end
-        y = y + 20
-
-        -- Abstract
-        if abstract then
-            local lines = wrap(other_talks[1].abstract, font, abstract_size, a.width - col2)
-            for idx = 1, math.min(5, #lines) do
-                text(col2, y, lines[idx], abstract_size, r,g,b,1)
-                y = y + abstract_size
-            end
-            y = y + 20
-        end
-
-        -- Speakers
-        for idx = 1, #other_talks[1].speakers do
-            text(col2, y, other_talks[1].speakers[idx], speaker_size, r,g,b,.8)
-            y = y + speaker_size
-        end
-    end
-
-    for now in api.frame_between(starts, ends) do
-        a.draw(now, x1, y1, x2, y2)
-    end
+    view_talk(other_talks[1], starts, ends, config, x1, y1, x2, y2)
 end
 
 local function view_room_info(starts, ends, config, x1, y1, x2, y2)
