@@ -200,6 +200,7 @@ local function view_talk(talk, starts, ends, config, x1, y1, x2, y2)
     local col1, col2
 
     local time_size = font_size
+    local relative_time_size = math.floor(font_size * 0.8)
     local title_size = math.floor(font_size * 0.9)
     local abstract_size = math.floor(font_size * 0.8)
     local speaker_size = math.floor(font_size * 0.8)
@@ -230,8 +231,8 @@ local function view_talk(talk, starts, ends, config, x1, y1, x2, y2)
             talk_time = "Jetzt"
         end
 
-        local y_time = y+time_size+10
-        info_text(col1, y_time, talk_time, time_size, r,g,b,0.8)
+        local y_time = y+time_size+20
+        info_text(col1, y_time, talk_time, relative_time_size, r,g,b,0.8)
 
         -- Title
         local lines = wrap(talk.title, font, title_size, a.width - col2)
